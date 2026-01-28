@@ -11,7 +11,7 @@ const server = http.createServer(app);
 // Create Socket.IO server
 const io = new Server(server, {
   cors: {
-    origin: 'https://kkcricketacademy.netlify.app',
+    origin: 'https://kkkcricketacademy.netlify.app/',
     credentials: true
   }
 });

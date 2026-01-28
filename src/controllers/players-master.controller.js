@@ -31,12 +31,21 @@ exports.getPlayerById = async (req, res) => {
 exports.createPlayer = async (req, res) => {
 
     const { Mobile } = req.body;
+
+    const payload = req.body;
+
+    const imagePath = req.file
+        ? `/uploads/players/${req.file.filename}`
+        : null;
+
+    payload.PhotoURL = imagePath;
+
     const existing = await playersService.findPlayer({ Mobile: Mobile });
 
     if (existing) {
         return response.success(res, PLAYERS.EXISTING_RECORD, { existing }, HTTP.CONFLICT)
     }
-    const players = await playersService.createPlayers(req.body);
+    const players = await playersService.createPlayers(payload);
 
     return response.success(res, PLAYERS.CREATED, { players }, HTTP.CREATED);
 };
@@ -45,7 +54,15 @@ exports.updatePlayer = async (req, res) => {
 
     const { id } = req.params;
 
-    const updated = await playersService.updatePlayers(id, req.body);
+    const imagePath = req.file
+        ? `/uploads/players/${req.file.filename}`
+        : null;
+
+    const payload = req.body;
+
+    payload.PhotoURL = imagePath;
+
+    const updated = await playersService.updatePlayers(id, payload);
 
     if (!updated) {
         return response.success(res, PLAYERS.NOT_FOUND, {}, HTTP.NOT_FOUND);

@@ -16,13 +16,21 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true,
       },
+      Captain: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      Founded: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
       OwnerName: {
         type: Sequelize.STRING,
-         
+
       },
       Contact: {
         type: Sequelize.STRING,
-        
+
       },
       CreatedAt: {
         type: Sequelize.DATE,

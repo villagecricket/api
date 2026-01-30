@@ -13,7 +13,7 @@ const getPlayerById = async (id) => {
     return await PlayerMaster.findByPk(id);
 };
 
-const createPlayers = async (data) => {  
+const createPlayers = async (data) => {
 
     return await PlayerMaster.create(data);
 };
@@ -31,7 +31,7 @@ const updatePlayers = async (id, data) => {
 
 const deletePlayerByID = async (id) => {
 
-    return await PlayerMaster.destroy({ where: { id } });
+    return await PlayerMaster.destroy({ where: { PlayerID: id } });
 };
 
 const findPlayer = async (where) => {

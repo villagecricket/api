@@ -51,6 +51,17 @@ router.use('/sessions', auctionSessionRoutes);
 const auctionPlayers = require('./auction-players.route')
 router.use('/auctionPlayer', auctionPlayers)
 
+const settingsRoutes = require('./settings.routes');
+router.use('/settings', settingsRoutes);
+
+const pollRoutes = require('./poll.routes');
+const tournamentRoutes = require('./tournament.routes');
+const matchRoutes = require('./match.routes');
+
+router.use('/polls', pollRoutes);
+router.use('/tournaments', tournamentRoutes);
+router.use('/matches', matchRoutes);
+
 const controllers = require('../controllers/sample.controller')
 
 router.use('/generate-form-schema', controllers.generateFormSchemaController)

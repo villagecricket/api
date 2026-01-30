@@ -12,8 +12,21 @@ module.exports = (sequelize, DataTypes) => {
         PhotoURL: { type: DataTypes.STRING },
         Notes: { type: DataTypes.STRING },
         Status: { type: DataTypes.STRING },
-        CreatedAt: DataTypes.DATE,
-        UpdatedAt: DataTypes.DATE
+
+        // New Fields
+        Address: { type: DataTypes.TEXT, allowNull: true },
+        BattingPosition: { type: DataTypes.STRING, allowNull: true },
+        CanKeep: { type: DataTypes.BOOLEAN, defaultValue: false },
+        CanCaptain: { type: DataTypes.BOOLEAN, defaultValue: false },
+        CanField: { type: DataTypes.BOOLEAN, defaultValue: true },
+        Height: { type: DataTypes.STRING, allowNull: true },
+        Weight: { type: DataTypes.STRING, allowNull: true },
+        JerseySize: { type: DataTypes.STRING, allowNull: true },
+        PreviousTeam: { type: DataTypes.STRING, allowNull: true },
+        Experience: { type: DataTypes.STRING, allowNull: true },
+        Bio: { type: DataTypes.TEXT, allowNull: true },
+        Nickname: { type: DataTypes.STRING, allowNull: true },
+        EmergencyContact: { type: DataTypes.STRING, allowNull: true }
     }, {
         tableName: 'PlayerMasters',
         timestamps: true,

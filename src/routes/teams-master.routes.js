@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const teamController = require('../controllers/teams-master.controller');
 
+const { uploadTeamLogo } = require('../middlewares/upload.middleware.js');
+
 // Get all teams
 router.get('/', teamController.getAllTeams);
 
@@ -9,10 +11,10 @@ router.get('/', teamController.getAllTeams);
 router.get('/:id', teamController.getTeamById);
 
 // Create a new team
-router.post('/', teamController.createTeam);
+router.post('/', uploadTeamLogo.single('image'), teamController.createTeam);
 
 // Update a team
-router.put('/:id', teamController.updateTeam);
+router.put('/:id', uploadTeamLogo.single('image'), teamController.updateTeam);
 
 // Delete a team
 router.delete('/:id', teamController.deleteTeam);

@@ -13,25 +13,43 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: true
         },
+        Captain: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        Founded: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
         OwnerName: {
             type: DataTypes.STRING,
-            
+            allowNull: true
         },
         Contact: {
             type: DataTypes.STRING,
-            
+            allowNull: true
         },
-        CreatedAt: {
-            type: DataTypes.DATE,
-            defaultValue: DataTypes.NOW,
+        Bio: {
+            type: DataTypes.TEXT,
+            allowNull: true
         },
-        UpdatedAt: {
-            type: DataTypes.DATE,
-            defaultValue: DataTypes.NOW,
+        Slogan: {
+            type: DataTypes.STRING,
+            allowNull: true
         },
+        Location: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        Coach: {
+            type: DataTypes.STRING,
+            allowNull: true
+        }
     }, {
         tableName: 'TeamMasters',
-        timestamps: false
+        timestamps: true,
+        createdAt: 'CreatedAt',
+        updatedAt: 'UpdatedAt'
     });
 
     TeamMaster.associate = function (models) {
@@ -39,6 +57,7 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'TeamID',
             as: 'AuctionTeams'
         });
+        // Add association with TournamentTeams if needed
     };
 
     return TeamMaster;

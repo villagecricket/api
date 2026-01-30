@@ -26,15 +26,32 @@ exports.getTeamById = async (req, res) => {
 };
 
 exports.createTeam = async (req, res) => {
-    const teams = await teamsService.createTeams(req.body);
+    const payload = req.body;
+    const imagePath = req.file
+        ? `/uploads/teams/${req.file.filename}`
+        : null;
+
+    if (imagePath) {
+        payload.LogoURL = imagePath;
+    }
+
+    const teams = await teamsService.createTeams(payload);
 
     return response.success(res, TEAMS.CREATED, { teams }, HTTP.CREATED);
 };
 
 exports.updateTeam = async (req, res) => {
     const { id } = req.params;
+    const payload = req.body;
+    const imagePath = req.file
+        ? `/uploads/teams/${req.file.filename}`
+        : null;
 
-    const updated = await teamsService.updateTeams(id, req.body);
+    if (imagePath) {
+        payload.LogoURL = imagePath;
+    }
+
+    const updated = await teamsService.updateTeams(id, payload);
 
     if (!updated) {
         return response.success(res, TEAMS.NOT_FOUND, {}, HTTP.NOT_FOUND);

@@ -60,7 +60,9 @@ exports.updatePlayer = async (req, res) => {
 
     const payload = req.body;
 
-    payload.PhotoURL = imagePath;
+    if (imagePath) {
+        payload.PhotoURL = imagePath;
+    }
 
     const updated = await playersService.updatePlayers(id, payload);
 

@@ -90,6 +90,7 @@ class TeamService {
                     model: PlayerMaster,
                     as: 'Players',
                     through: {
+                        model: TeamPlayer,
                         where: { Status: 'Active' },
                         attributes: ['JoinedDate', 'Status']
                     },

@@ -26,13 +26,21 @@ module.exports = (sequelize, DataTypes) => {
         Experience: { type: DataTypes.STRING, allowNull: true },
         Bio: { type: DataTypes.TEXT, allowNull: true },
         Nickname: { type: DataTypes.STRING, allowNull: true },
-        EmergencyContact: { type: DataTypes.STRING, allowNull: true }
+        EmergencyContact: { type: DataTypes.STRING, allowNull: true },
+        UserID: { type: DataTypes.INTEGER, allowNull: true }
     }, {
         tableName: 'PlayerMasters',
         timestamps: true,
+        createdAt: 'CreatedAt',
+        updatedAt: 'UpdatedAt'
     });
 
     PlayerMaster.associate = (models) => {
+        PlayerMaster.belongsTo(models.User, {
+            foreignKey: 'UserID',
+            as: 'User'
+        });
+
         // Auction relationships
         PlayerMaster.hasMany(models.AuctionPlayer, {
             foreignKey: 'PlayerID',

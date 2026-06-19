@@ -8,7 +8,9 @@ module.exports = (sequelize, DataTypes) => {
         TotalVotes: { type: DataTypes.INTEGER, defaultValue: 0 }
     }, {
         tableName: 'Polls',
-        timestamps: true
+        timestamps: true,
+        createdAt: 'CreatedAt',
+        updatedAt: 'UpdatedAt'
     });
 
     Poll.associate = (models) => {

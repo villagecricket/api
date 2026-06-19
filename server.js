@@ -15,6 +15,8 @@ const io = new Server(server, {
 
 initializeSockets(io);
 
+// Expose io globally so REST controllers can emit socket events
+app.locals.io = io;
 
 // Start server
 const PORT = process.env.PORT || 3000;
@@ -22,7 +24,8 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, async () => {
   try {
     await db.sequelize.authenticate();
-    console.log('Database connected');
+    await db.sequelize.sync({ alter: false, force: false });
+    console.log('Database connected and schemas are ready');
   } catch (err) {
     console.error('Failed to connect to database:', err);
   }

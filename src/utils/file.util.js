@@ -13,6 +13,18 @@ const imageFileFilter = (req, file, cb) => {
     }
 };
 
+const documentFileFilter = (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|webp|pdf/;
+    const ext = path.extname(file.originalname).toLowerCase();
+    const mime = file.mimetype;
+
+    if (allowedTypes.test(ext) || mime === 'application/pdf') {
+        cb(null, true);
+    } else {
+        cb(new Error('Only image and PDF files are allowed'), false);
+    }
+};
+
 const generateFileName = (file) => {
     const ext = path.extname(file.originalname);
     return `${uuid()}${ext}`;
@@ -20,5 +32,6 @@ const generateFileName = (file) => {
 
 module.exports = {
     imageFileFilter,
+    documentFileFilter,
     generateFileName
 };

@@ -1,7 +1,7 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { imageFileFilter, generateFileName } = require('../utils/file.util.js');
+const { imageFileFilter, documentFileFilter, generateFileName } = require('../utils/file.util.js');
 
 // Folders
 const FOLDERS = {
@@ -11,7 +11,9 @@ const FOLDERS = {
     sponsors: 'sponsors',
     branding: 'branding',
     teams: 'teams',
-    tournaments: 'tournaments'
+    tournaments: 'tournaments',
+    receipts: 'receipts',
+    documents: 'documents'
 };
 
 // Storage factory
@@ -26,9 +28,9 @@ const storageFactory = (folder) => {
     });
 };
 
-const createUploader = (folder) => multer({
+const createUploader = (folder, fileFilter = imageFileFilter) => multer({
     storage: storageFactory(folder),
-    fileFilter: imageFileFilter,
+    fileFilter: fileFilter,
     limits: { fileSize: 5 * 1024 * 1024 } // 5MB
 });
 
@@ -40,6 +42,10 @@ const uploadAppLogo = createUploader(FOLDERS.branding);
 const uploadTeamLogo = createUploader(FOLDERS.teams);
 const uploadTournament = createUploader(FOLDERS.tournaments);
 
+// New document uploaders
+const uploadReceipt = createUploader(FOLDERS.receipts, documentFileFilter);
+const uploadVerificationDoc = createUploader(FOLDERS.documents, documentFileFilter);
+
 module.exports = {
     uploadPlayerImage,
     uploadCarouselImage,
@@ -47,5 +53,7 @@ module.exports = {
     uploadSponsorLogo,
     uploadAppLogo,
     uploadTeamLogo,
-    uploadTournament
+    uploadTournament,
+    uploadReceipt,
+    uploadVerificationDoc
 };

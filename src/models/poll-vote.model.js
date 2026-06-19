@@ -6,7 +6,9 @@ module.exports = (sequelize, DataTypes) => {
         PlayerId: { type: DataTypes.INTEGER, allowNull: false }
     }, {
         tableName: 'PollVotes',
-        timestamps: true
+        timestamps: true,
+        createdAt: 'CreatedAt',
+        updatedAt: 'UpdatedAt'
     });
 
     PollVote.associate = (models) => {

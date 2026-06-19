@@ -3,10 +3,10 @@ const router = express.Router();
 
 const auctionPlayers = require('../controllers/auction-players.controller');
 
-const { createPlayerValidator } = require('../validations/players-master.validator');
+const { auctionPlayerValidator } = require('../validations/players-master.validator');
 const validateRequest = require('../middlewares/validateRequest');
 
-router.post('/', createPlayerValidator, validateRequest, auctionPlayers.createAuctionPlayer
+router.post('/', auctionPlayerValidator, validateRequest, auctionPlayers.createAuctionPlayer
 );
 
 module.exports = router;

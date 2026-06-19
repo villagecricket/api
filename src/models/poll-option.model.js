@@ -7,7 +7,9 @@ module.exports = (sequelize, DataTypes) => {
         Order: { type: DataTypes.INTEGER, defaultValue: 0 }
     }, {
         tableName: 'PollOptions',
-        timestamps: true
+        timestamps: true,
+        createdAt: 'CreatedAt',
+        updatedAt: 'UpdatedAt'
     });
 
     PollOption.associate = (models) => {

@@ -52,6 +52,18 @@ exports.startAuction = async (req, res) => {
     const { sessionId } = req.params;
 
     const result = await auctionService.startAuction(sessionId);
+
+    // Emit socket event to all clients in the session room
+    const io = req.app.locals.io;
+    if (io) {
+      const auctionNamespace = io.of('/auction');
+      auctionNamespace.to(`session-${sessionId}`).emit('auction-started', {
+        sessionId: +sessionId,
+        message: 'Auction has started! Get ready to bid.',
+        session: result.data
+      });
+    }
+
     return response.success(res, result.message, result.data);
   } catch (error) {
     return response.error(res, { message: error.message }, HTTP.BAD_REQUEST);
@@ -137,9 +149,85 @@ exports.getAuctionResults = async (req, res) => {
 exports.getTeamDashboard = async (req, res) => {
   try {
     const { sessionId, teamId } = req.params;
-
     const result = await auctionService.getTeamDashboard(sessionId, teamId);
     return response.success(res, 'Team dashboard fetched successfully', result.data);
+  } catch (error) {
+    return response.error(res, { message: error.message }, HTTP.BAD_REQUEST);
+  }
+};
+
+/**
+ * Get all teams registered for a session
+ */
+exports.getSessionTeams = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const result = await auctionService.getSessionTeams(sessionId);
+    return response.success(res, 'Session teams fetched successfully', result.data);
+  } catch (error) {
+    return response.error(res, { message: error.message }, HTTP.BAD_REQUEST);
+  }
+};
+
+/**
+ * Get all players in the auction pool for a session
+ */
+exports.getSessionPlayers = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const result = await auctionService.getSessionPlayers(sessionId);
+    return response.success(res, 'Session players fetched successfully', result.data);
+  } catch (error) {
+    return response.error(res, { message: error.message }, HTTP.BAD_REQUEST);
+  }
+};
+
+/**
+ * Get all live/upcoming sessions (for owner entry screen)
+ */
+exports.getLiveSessions = async (req, res) => {
+  try {
+    const result = await auctionService.getLiveSessions();
+    return response.success(res, 'Live sessions fetched successfully', result.data);
+  } catch (error) {
+    return response.error(res, { message: error.message }, HTTP.BAD_REQUEST);
+  }
+};
+
+/**
+ * Remove a team from a session
+ */
+exports.removeTeam = async (req, res) => {
+  try {
+    const { sessionId, teamId } = req.params;
+    const result = await auctionService.removeTeam(sessionId, teamId);
+    return response.success(res, result.message, {});
+  } catch (error) {
+    return response.error(res, { message: error.message }, HTTP.BAD_REQUEST);
+  }
+};
+
+/**
+ * Remove a player from the auction pool
+ */
+exports.removePlayerFromPool = async (req, res) => {
+  try {
+    const { sessionId, playerId } = req.params;
+    const result = await auctionService.removePlayerFromPool(sessionId, playerId);
+    return response.success(res, result.message, {});
+  } catch (error) {
+    return response.error(res, { message: error.message }, HTTP.BAD_REQUEST);
+  }
+};
+
+/**
+ * Get registered teams for a session — PUBLIC (for website display)
+ */
+exports.getSessionRegisteredTeams = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const result = await auctionService.getSessionRegisteredTeams(sessionId);
+    return response.success(res, 'Registered teams fetched successfully', result.data);
   } catch (error) {
     return response.error(res, { message: error.message }, HTTP.BAD_REQUEST);
   }

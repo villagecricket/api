@@ -16,7 +16,30 @@ exports.getAllSessions = async (req, res) => {
 
 exports.getUpcomingSessions = async (req, res) => {
 
-  const sessions = await auctionService.getUpcomingAuctionSessions();
+  const rawSessions = await auctionService.getUpcomingAuctionSessions();
+
+  const sessions = rawSessions.map(s => {
+    const registeredTeams = (s.AuctionTeams || []).map(at => ({
+      teamId: at.TeamID,
+      name: at.TeamMaster?.Name,
+      logoUrl: at.TeamMaster?.LogoURL,
+      location: at.TeamMaster?.Location,
+    }));
+
+    return {
+      SessionID: s.SessionID,
+      Name: s.Name,
+      Status: s.Status,
+      Year: s.Year,
+      MaxBudget: s.MaxBudget,
+      MaxPlayersPerTeam: s.MaxPlayersPerTeam,
+      StartDate: s.StartDate,
+      EndDate: s.EndDate,
+      Notes: s.Notes,
+      registeredTeams,
+      registeredTeamCount: registeredTeams.length
+    };
+  });
 
   if (!sessions.length) {
     return response.success(res, MSG.AUCTIONSESSION.NOT_FOUND, { sessions }, HTTP.NOT_FOUND);

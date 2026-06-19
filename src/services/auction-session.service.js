@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { AuctionSession } = require('../models');
+const { AuctionSession, AuctionTeam, TeamMaster } = require('../models');
 const BaseService = require('./base.service');
 
 const service = new BaseService(AuctionSession);
@@ -9,14 +9,22 @@ const getAllAuctionSessions = async () => {
 };
 
 const getUpcomingAuctionSessions = async () => {
-    return await service.getAll({
+    const sessions = await AuctionSession.findAll({
         where: {
-            Status: 'upcoming',
-            EndDate: {
-                [Op.gte]: new Date()
+            Status: { [Op.in]: ['upcoming', 'live'] },
+        },
+        order: [['StartDate', 'ASC']],
+        include: [
+            {
+                model: AuctionTeam,
+                required: false,
+                include: [
+                    { model: TeamMaster, attributes: ['TeamID', 'Name', 'LogoURL', 'Location'] }
+                ]
             }
-        }
+        ]
     });
+    return sessions;
 };
 
 const getAuctionSessionById = async (id) => {
@@ -37,7 +45,7 @@ const deleteAuctionSession = async (id) => {
 
 module.exports = {
     getAllAuctionSessions,
-    getUpcomingAuctionSessions, // Ensure this export is maintained
+    getUpcomingAuctionSessions,
     getAuctionSessionById,
     createAuctionSession,
     updateAuctionSession,

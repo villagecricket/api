@@ -4,25 +4,32 @@ const BaseService = require('./base.service');
 const service = new BaseService(TeamMaster);
 
 const getAllTeams = async () => {
-    return await TeamMaster.findAll({
-        include: [{
-            model: PlayerMaster,
-            as: 'Players',
-            through: { where: { Status: 'Active' } },
-            required: false
-        }]
-    });
+    const teams = await TeamMaster.findAll();
+    for (const team of teams) {
+        const players = await PlayerMaster.findAll({
+            include: [{
+                model: TeamPlayer,
+                where: { TeamID: team.TeamID, Status: 'Active' },
+                required: false
+            }]
+        });
+        team.dataValues.Players = players;
+    }
+    return teams;
 };
 
 const getTeamsById = async (id) => {
-    return await TeamMaster.findByPk(id, {
+    const team = await TeamMaster.findByPk(id);
+    if (!team) return null;
+    const players = await PlayerMaster.findAll({
         include: [{
-            model: PlayerMaster,
-            as: 'Players',
-            through: { where: { Status: 'Active' } },
+            model: TeamPlayer,
+            where: { TeamID: id, Status: 'Active' },
             required: false
         }]
     });
+    team.dataValues.Players = players;
+    return team;
 };
 
 const createTeams = async (data) => {

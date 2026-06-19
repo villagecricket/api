@@ -1,124 +1,295 @@
-const auctionAdmin = require('./namespaces/auction.admin');
-const auctionTeam = require('./namespaces/auction.team');
-const { AuctionPlayer, AuctionTeam } = require('../models');
-
-// NEW: Import comprehensive handlers
-const auctionHandler = require('./handlers/auction.handler');
 const scoringHandler = require('./handlers/scoring.handler');
-
-const sessionStates = {}; // Store state for each sessionId
+const broadcastHandler = require('./handlers/broadcast.handler');
+const auctionStateService = require('../services/auction-state.service');
+const auctionService = require('../services/auction.service');
+const { AuctionSession, AuctionPlayer, AuctionTeam, AuctionBid, AuctionLog, PlayerMaster, TeamMaster, User, Owner } = require('../models');
+const jwt = require('../utils/jwt');
 
 module.exports = function initializeSockets(io) {
-    const adminNamespace = io.of('/auction-admin');
-    const teamNamespace = io.of('/auction-team');
 
-    adminNamespace.on('connection', (socket) => {
-        console.log('🧑‍⚖️ Admin connected:', socket.id);
+    /* ========================================================
+       AUCTION NAMESPACE  (/auction)
+       All auction events — Admin and Teams both connect here.
+       Roles are determined by the JWT token passed on connect.
+     ======================================================== */
+    const auctionNamespace = io.of('/auction');
 
-        socket.on('join-session', async (sessionId) => {
-            console.log(`Admin joined session: ${sessionId}`);
-
-            if (!sessionStates[sessionId]) {
-                const state = await loadAuctionState(sessionId);
-                sessionStates[sessionId] = state;
-            }
-            sessionStates[sessionId].adminNamespace = adminNamespace;
-            sessionStates[sessionId].teamNamespace = teamNamespace;
-
-            auctionAdmin(socket, sessionStates[sessionId], teamNamespace);
-        });
+    auctionNamespace.use((socket, next) => {
+        const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.split(' ')[1];
+        if (!token) return next(new Error('Authentication token missing'));
+        try {
+            const decoded = jwt.verifyAccessToken(token);
+            socket.data.userId = decoded.userId;
+            socket.data.userRole = decoded.role;
+            next();
+        } catch (err) {
+            next(new Error('Invalid authentication token'));
+        }
     });
 
-    // TEAM CONNECT
-    teamNamespace.on('connection', (socket) => {
-        console.log('🧑‍🤝‍🧑 Team connected:', socket.id);
+    auctionNamespace.on('connection', async (socket) => {
+        console.log(`🎯 Auction socket connected: ${socket.id} (user: ${socket.data.userId}, role: ${socket.data.userRole})`);
 
-        socket.on('join-session', async (sessionId) => {
-            console.log(`Team joined session: ${sessionId}`);
+        /* ── Join session room ── */
+        socket.on('join-session', async ({ sessionId }) => {
+            try {
+                const state = await auctionStateService.getSessionState(sessionId);
+                state.namespace = auctionNamespace;
 
-            if (!sessionStates[sessionId]) {
-                const state = await loadAuctionState(sessionId);
-                sessionStates[sessionId] = {
-                    ...state,
-                    adminNamespace,
-                    teamNamespace
+                socket.join(`session-${sessionId}`);
+                socket.data.sessionId = sessionId;
+
+                // Send full current state to the joining client
+                socket.emit('session-state', {
+                    session: {
+                        sessionId: state.sessionId,
+                        name: state.session.Name,
+                        maxBudget: state.session.MaxBudget,
+                        maxPlayersPerTeam: state.session.MaxPlayersPerTeam,
+                        status: state.session.Status,
+                    },
+                    players: state.players,
+                    teams: state.teams,
+                    currentPlayer: state.players[state.currentPlayerIndex] || null,
+                    currentPlayerIndex: state.currentPlayerIndex,
+                    secondsLeft: state.secondsLeft,
+                });
+
+                console.log(`✅ Client ${socket.id} joined session ${sessionId}`);
+            } catch (err) {
+                socket.emit('error', { message: err.message });
+            }
+        });
+
+        /* ── ADMIN: Start the current player for bidding ── */
+        socket.on('start-player', async () => {
+            const { sessionId } = socket.data;
+            if (!sessionId) return socket.emit('error', { message: 'Not in a session' });
+
+            try {
+                const state = await auctionStateService.getSessionState(sessionId);
+                const result = await auctionStateService.startPlayer(state);
+
+                if (!result.success) {
+                    return socket.emit('error', { message: result.reason });
+                }
+
+                auctionNamespace.to(`session-${sessionId}`).emit('player-started', {
+                    player: result.player,
+                    secondsLeft: state.secondsLeft,
+                });
+
+                console.log(`▶️  Session ${sessionId}: Player "${result.player.name}" started`);
+            } catch (err) {
+                socket.emit('error', { message: err.message });
+            }
+        });
+
+        /* ── ADMIN: Skip the current player ── */
+        socket.on('skip-player', async () => {
+            const { sessionId } = socket.data;
+            if (!sessionId) return socket.emit('error', { message: 'Not in a session' });
+
+            try {
+                const state = await auctionStateService.getSessionState(sessionId);
+                const result = await auctionStateService.skipPlayer(state);
+
+                if (!result.success) {
+                    return socket.emit('error', { message: result.reason });
+                }
+
+                const nextPlayer = state.players[state.currentPlayerIndex] || null;
+                auctionNamespace.to(`session-${sessionId}`).emit('player-skipped', {
+                    skippedPlayerId: state.players[state.currentPlayerIndex - 1]?.playerId,
+                    nextPlayer,
+                });
+
+                console.log(`⏭️  Session ${sessionId}: Player skipped`);
+            } catch (err) {
+                socket.emit('error', { message: err.message });
+            }
+        });
+
+        /* ── ADMIN: Sell the current player ── */
+        socket.on('sell-player', async ({ teamId, finalBid }) => {
+            const { sessionId } = socket.data;
+            if (!sessionId) return socket.emit('error', { message: 'Not in a session' });
+
+            try {
+                const state = await auctionStateService.getSessionState(sessionId);
+                const result = await auctionStateService.sellPlayer(state, teamId, finalBid);
+
+                if (!result.success) {
+                    return socket.emit('error', { message: result.reason });
+                }
+
+                const nextPlayer = state.players[state.currentPlayerIndex] || null;
+                auctionNamespace.to(`session-${sessionId}`).emit('player-sold', {
+                    player: result.player,
+                    teamId,
+                    soldPrice: finalBid,
+                    teams: result.teams,
+                    nextPlayer,
+                });
+
+                console.log(`🔨 Session ${sessionId}: Player "${result.player.name}" sold for ₹${finalBid}`);
+            } catch (err) {
+                socket.emit('error', { message: err.message });
+            }
+        });
+
+        /* ── ADMIN: Mark current player unsold ── */
+        socket.on('mark-unsold', async () => {
+            const { sessionId } = socket.data;
+            if (!sessionId) return socket.emit('error', { message: 'Not in a session' });
+
+            try {
+                const state = await auctionStateService.getSessionState(sessionId);
+                const result = await auctionStateService.markUnsold(state);
+
+                if (!result.success) {
+                    return socket.emit('error', { message: result.reason });
+                }
+
+                const nextPlayer = state.players[state.currentPlayerIndex] || null;
+                auctionNamespace.to(`session-${sessionId}`).emit('player-unsold', {
+                    player: state.players[state.currentPlayerIndex - 1],
+                    nextPlayer,
+                });
+
+                console.log(`❌ Session ${sessionId}: Player marked unsold`);
+            } catch (err) {
+                socket.emit('error', { message: err.message });
+            }
+        });
+
+/* ── OWNER/TEAM: Place a bid ── */
+         socket.on('place-bid', async ({ teamId, playerId, bidAmount }) => {
+             const { sessionId } = socket.data;
+             if (!sessionId) return socket.emit('bid-rejected', { reason: 'Not in a session' });
+             // Security: verify teamId belongs to this owner
+             const { Owner } = require('../models');
+             const owner = await Owner.findOne({ where: { UserID: socket.data.userId } });
+             if (owner && owner.TeamID !== teamId) {
+                 return socket.emit('bid-rejected', { reason: 'You can only bid with your own team' });
+             }
+
+            try {
+                const state = await auctionStateService.getSessionState(sessionId);
+                const result = await auctionStateService.placeBid(state, teamId, playerId, bidAmount);
+
+                if (!result.success) {
+                    return socket.emit('bid-rejected', { reason: result.reason });
+                }
+
+                const player = state.players[state.currentPlayerIndex];
+                const team = state.teams.find(t => t.teamId === teamId);
+
+                // Confirm to bidder
+                socket.emit('bid-accepted', { bidAmount, playerId });
+
+                // Broadcast to everyone in the room
+                auctionNamespace.to(`session-${sessionId}`).emit('bid-placed', {
+                    playerId,
+                    teamId,
+                    teamName: team?.name,
+                    bidAmount,
+                    currentBid: player.currentBid,
+                    secondsLeft: state.secondsLeft,
+                    timestamp: new Date(),
+                });
+
+                console.log(`💰 Session ${sessionId}: Team ${team?.name} bid ₹${bidAmount} on player ${player.name}`);
+            } catch (err) {
+                socket.emit('bid-rejected', { reason: err.message });
+            }
+        });
+
+        /* ── Get latest session state (reconnect/refresh) ── */
+        socket.on('get-state', async () => {
+            const { sessionId } = socket.data;
+            if (!sessionId) return socket.emit('error', { message: 'Not in a session' });
+
+            try {
+                const state = await auctionStateService.getSessionState(sessionId);
+                socket.emit('session-state', {
+                    session: {
+                        sessionId: state.sessionId,
+                        name: state.session.Name,
+                        maxBudget: state.session.MaxBudget,
+                        maxPlayersPerTeam: state.session.MaxPlayersPerTeam,
+                        status: state.session.Status,
+                    },
+                    players: state.players,
+                    teams: state.teams,
+                    currentPlayer: state.players[state.currentPlayerIndex] || null,
+                    currentPlayerIndex: state.currentPlayerIndex,
+                    secondsLeft: state.secondsLeft,
+                });
+            } catch (err) {
+                socket.emit('error', { message: err.message });
+            }
+        });
+
+        /* ── OWNER: Register team for auction (if not already registered) ── */
+        socket.on('register-team', async ({ teamId }) => {
+            const { sessionId } = socket.data;
+            if (!sessionId) return socket.emit('error', { message: 'Not in a session' });
+
+            // Security: owner can only register their own team
+            if (socket.data.userRole === 'owner') {
+                const owner = await Owner.findOne({ where: { UserID: socket.data.userId } });
+                if (owner && owner.TeamID !== teamId) {
+                    return socket.emit('team-registered', { success: false, message: 'You can only register your own team' });
                 }
             }
 
-            auctionTeam(socket, sessionStates[sessionId]);
-        });
-    });
+            try {
+                const result = await auctionService.registerTeam(sessionId, teamId);
 
-    // NEW: Comprehensive Auction Handler
-    const auctionNamespace = io.of('/auction');
-    auctionNamespace.on('connection', (socket) => {
-        console.log('🎯 Comprehensive auction socket connected:', socket.id);
+                // Reload session state from DB to include new team by clearing cache
+                auctionStateService.clearSessionState(sessionId);
+                const state = await auctionStateService.getSessionState(sessionId);
+                state.namespace = auctionNamespace;
 
-        socket.on('join-auction', async (sessionId) => {
-            console.log(`Client joined auction session: ${sessionId}`);
+                // Broadcast updated state to all clients in the session
+                auctionNamespace.to(`session-${sessionId}`).emit('session-state', {
+                    session: {
+                        sessionId: state.sessionId,
+                        name: state.session.Name,
+                        maxBudget: state.session.MaxBudget,
+                        maxPlayersPerTeam: state.session.MaxPlayersPerTeam,
+                        status: state.session.Status,
+                    },
+                    players: state.players,
+                    teams: state.teams,
+                    currentPlayer: state.players[state.currentPlayerIndex] || null,
+                    currentPlayerIndex: state.currentPlayerIndex,
+                    secondsLeft: state.secondsLeft,
+                });
 
-            if (!sessionStates[sessionId]) {
-                const state = await loadAuctionState(sessionId);
-                sessionStates[sessionId] = { ...state, sessionId };
+                socket.emit('team-registered', { success: true, data: result.data });
+                console.log(`✅ Team ${teamId} registered in session ${sessionId}`);
+            } catch (err) {
+                socket.emit('team-registered', { success: false, message: err.message });
             }
+        });
 
-            auctionHandler(socket, sessionStates[sessionId]);
+        /* ── Disconnect ── */
+        socket.on('disconnect', () => {
+            console.log(`🔌 Auction socket disconnected: ${socket.id}`);
         });
     });
 
-    // NEW: Live Scoring Handler
+    /* ========================================================
+       LIVE SCORING NAMESPACE (existing, untouched)
+    ======================================================== */
     scoringHandler(io);
 
-    // NEW: Broadcast Handler (WebRTC signaling for live cameras)
-    const broadcastHandler = require('./handlers/broadcast.handler');
+    /* ========================================================
+       BROADCAST/CAMERA NAMESPACE (existing, untouched)
+    ======================================================== */
     broadcastHandler(io);
 
     console.log('✅ All Socket.IO handlers initialized');
 };
-
-/**
- * Loads players and teams for a specific auction session
- * @param {number} sessionId
- */
-async function loadAuctionState(sessionId) {
-    const players = await AuctionPlayer.findAll({
-        where: { SessionID: sessionId },
-        include: ['PlayerMaster'],
-    });
-
-    // const teams = await AuctionTeam.findAll({
-    //     where: { SessionID: sessionId },
-    //     include: ['TeamMaster'],
-    // });
-
-
-
-    return {
-        players: players.map(p => ({
-            id: p.AuctionPlayerID,
-            name: p.PlayerMaster?.Name || 'Unknown',
-            basePrice: p.BasePrice,
-            currentBid: p.CurrentBid || p.BasePrice,
-            status: p.Status,
-            highestBidTeam: p.HighestBidTeamID,
-            photo: p.PlayerMaster?.Photo || null,
-        })),
-        teams: [
-            { id: 1, name: "KKK Juniors", budget: 20000 },
-            { id: 2, name: "KKK Legends", budget: 15000 },
-            { id: 3, name: "Maveric Strikers", budget: 20000 },
-            { id: 4, name: "Seven Stars", budget: 20000 },
-            { id: 5, name: "Power Hitters", budget: 20000 },
-            { id: 6, name: "GJ Wariers", budget: 20000 },
-        ],
-        // teams: teams.map(t => ({
-        //     id: t.AuctionTeamID,
-        //     name: t.Team?.Name || 'Team',
-        //     budget: t.Budget,
-        // })),
-        currentPlayerIndex: 0,
-        timer: null,
-        secondsLeft: 30
-    };
-}
-

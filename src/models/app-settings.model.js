@@ -15,7 +15,9 @@ module.exports = (sequelize, DataTypes) => {
         YoutubeURL: { type: DataTypes.STRING }
     }, {
         tableName: 'AppSettings',
-        timestamps: true
+        timestamps: true,
+        createdAt: 'CreatedAt',
+        updatedAt: 'UpdatedAt'
     });
 
     return AppSetting;

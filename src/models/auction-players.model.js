@@ -5,15 +5,13 @@ module.exports = (sequelize, DataTypes) => {
             autoIncrement: true,
             primaryKey: true
         },
-        SessionID: {
-            type: DataTypes.INTEGER,
-        },
-        PlayerID: {
-            type: DataTypes.INTEGER,
-        },
+        SessionID: { type: DataTypes.INTEGER },
+        PlayerID: { type: DataTypes.INTEGER },
+        TeamID: { type: DataTypes.INTEGER, allowNull: true },
         BasePrice: DataTypes.INTEGER,
+        SoldPrice: { type: DataTypes.DECIMAL(15, 2), allowNull: true },
         Status: {
-            type: DataTypes.ENUM('available', 'live', 'sold', 'skipped'),
+            type: DataTypes.ENUM('available', 'live', 'sold', 'unsold', 'skipped'),
             defaultValue: 'available'
         },
         CurrentBid: DataTypes.INTEGER,
@@ -22,12 +20,15 @@ module.exports = (sequelize, DataTypes) => {
         UpdatedAt: DataTypes.DATE
     }, {
         tableName: 'AuctionPlayers',
-        timestamps: true
+        timestamps: true,
+        createdAt: 'CreatedAt',
+        updatedAt: 'UpdatedAt'
     });
 
     AuctionPlayer.associate = (models) => {
         AuctionPlayer.belongsTo(models.AuctionSession, { foreignKey: 'SessionID' });
         AuctionPlayer.belongsTo(models.PlayerMaster, { foreignKey: 'PlayerID' });
+        AuctionPlayer.belongsTo(models.TeamMaster, { foreignKey: 'TeamID', as: 'WinningTeam' });
     };
 
     return AuctionPlayer;

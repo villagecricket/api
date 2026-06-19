@@ -33,6 +33,8 @@ module.exports = (sequelize, DataTypes) => {
     }, {
         tableName: 'AuctionSessions',
         timestamps: true,
+        createdAt: 'CreatedAt',
+        updatedAt: 'UpdatedAt'
 
     });
 

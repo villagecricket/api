@@ -2,144 +2,156 @@
 
 module.exports = {
     up: async (queryInterface, Sequelize) => {
+        // Helper to add column only if it doesn't exist
+        const addColumnIfNotExists = async (tableName, columnName, columnDefinition) => {
+            try {
+                await queryInterface.addColumn(tableName, columnName, columnDefinition);
+            } catch (err) {
+                // Column already exists, skip
+                if (!err.message.includes('Duplicate column') && !err.message.includes('already exists')) {
+                    throw err;
+                }
+            }
+        };
+
         // Add new columns to Tournaments table
-        await queryInterface.addColumn('Tournaments', 'RegistrationStartDate', {
+        await addColumnIfNotExists('Tournaments', 'RegistrationStartDate', {
             type: Sequelize.DATE,
             allowNull: true
         });
 
-        await queryInterface.addColumn('Tournaments', 'RegistrationEndDate', {
+        await addColumnIfNotExists('Tournaments', 'RegistrationEndDate', {
             type: Sequelize.DATE,
             allowNull: true
         });
 
-        await queryInterface.addColumn('Tournaments', 'IsRegistrationOpen', {
+        await addColumnIfNotExists('Tournaments', 'IsRegistrationOpen', {
             type: Sequelize.BOOLEAN,
             defaultValue: true
         });
 
-        await queryInterface.addColumn('Tournaments', 'MaxTeams', {
+        await addColumnIfNotExists('Tournaments', 'MaxTeams', {
             type: Sequelize.INTEGER,
             defaultValue: 16
         });
 
-        await queryInterface.addColumn('Tournaments', 'MinTeams', {
+        await addColumnIfNotExists('Tournaments', 'MinTeams', {
             type: Sequelize.INTEGER,
             defaultValue: 4
         });
 
-        await queryInterface.addColumn('Tournaments', 'CurrentTeamsCount', {
+        await addColumnIfNotExists('Tournaments', 'CurrentTeamsCount', {
             type: Sequelize.INTEGER,
             defaultValue: 0
         });
 
-        await queryInterface.addColumn('Tournaments', 'MatchFormat', {
+        await addColumnIfNotExists('Tournaments', 'MatchFormat', {
             type: Sequelize.ENUM('T20', 'ODI', 'Test', 'T10', 'The100', 'Custom'),
             defaultValue: 'T20'
         });
 
-        await queryInterface.addColumn('Tournaments', 'OversPerMatch', {
+        await addColumnIfNotExists('Tournaments', 'OversPerMatch', {
             type: Sequelize.INTEGER,
             defaultValue: 20,
             comment: 'Number of overs per innings'
         });
 
-        await queryInterface.addColumn('Tournaments', 'PlayersPerTeam', {
+        await addColumnIfNotExists('Tournaments', 'PlayersPerTeam', {
             type: Sequelize.INTEGER,
             defaultValue: 11
         });
 
-        await queryInterface.addColumn('Tournaments', 'RegistrationFee', {
+        await addColumnIfNotExists('Tournaments', 'RegistrationFee', {
             type: Sequelize.DECIMAL(10, 2),
             defaultValue: 0.00
         });
 
-        await queryInterface.addColumn('Tournaments', 'ContactEmail', {
+        await addColumnIfNotExists('Tournaments', 'ContactEmail', {
             type: Sequelize.STRING,
             allowNull: true
         });
 
-        await queryInterface.addColumn('Tournaments', 'ContactPhone', {
+        await addColumnIfNotExists('Tournaments', 'ContactPhone', {
             type: Sequelize.STRING,
             allowNull: true
         });
 
-        await queryInterface.addColumn('Tournaments', 'WebsiteURL', {
+        await addColumnIfNotExists('Tournaments', 'WebsiteURL', {
             type: Sequelize.STRING,
             allowNull: true
         });
 
-        await queryInterface.addColumn('Tournaments', 'IsPublic', {
+        await addColumnIfNotExists('Tournaments', 'IsPublic', {
             type: Sequelize.BOOLEAN,
             defaultValue: true,
             comment: 'Whether tournament is visible to public'
         });
 
-        await queryInterface.addColumn('Tournaments', 'VenueName', {
+        await addColumnIfNotExists('Tournaments', 'VenueName', {
             type: Sequelize.STRING,
             allowNull: true,
             comment: 'Primary venue/ground name'
         });
 
-        await queryInterface.addColumn('Tournaments', 'City', {
+        await addColumnIfNotExists('Tournaments', 'City', {
             type: Sequelize.STRING,
             allowNull: true
         });
 
-        await queryInterface.addColumn('Tournaments', 'State', {
+        await addColumnIfNotExists('Tournaments', 'State', {
             type: Sequelize.STRING,
             allowNull: true
         });
 
-        await queryInterface.addColumn('Tournaments', 'Country', {
+        await addColumnIfNotExists('Tournaments', 'Country', {
             type: Sequelize.STRING,
             defaultValue: 'India'
         });
 
-        await queryInterface.addColumn('Tournaments', 'GroupCount', {
+        await addColumnIfNotExists('Tournaments', 'GroupCount', {
             type: Sequelize.INTEGER,
             defaultValue: 0,
             comment: 'Number of groups for group stage (0 for no groups)'
         });
 
-        await queryInterface.addColumn('Tournaments', 'TeamsPerGroup', {
+        await addColumnIfNotExists('Tournaments', 'TeamsPerGroup', {
             type: Sequelize.INTEGER,
             defaultValue: 0
         });
 
-        await queryInterface.addColumn('Tournaments', 'QualifiersCount', {
+        await addColumnIfNotExists('Tournaments', 'QualifiersCount', {
             type: Sequelize.INTEGER,
             defaultValue: 2,
             comment: 'Number of teams qualifying from each group'
         });
 
-        await queryInterface.addColumn('Tournaments', 'PointsForWin', {
+        await addColumnIfNotExists('Tournaments', 'PointsForWin', {
             type: Sequelize.INTEGER,
             defaultValue: 2
         });
 
-        await queryInterface.addColumn('Tournaments', 'PointsForTie', {
+        await addColumnIfNotExists('Tournaments', 'PointsForTie', {
             type: Sequelize.INTEGER,
             defaultValue: 1
         });
 
-        await queryInterface.addColumn('Tournaments', 'PointsForNoResult', {
+        await addColumnIfNotExists('Tournaments', 'PointsForNoResult', {
             type: Sequelize.INTEGER,
             defaultValue: 1
         });
 
-        await queryInterface.addColumn('Tournaments', 'BallsPerOver', {
+        await addColumnIfNotExists('Tournaments', 'BallsPerOver', {
             type: Sequelize.INTEGER,
             defaultValue: 6
         });
 
-        await queryInterface.addColumn('Tournaments', 'PowerplayOvers', {
+        await addColumnIfNotExists('Tournaments', 'PowerplayOvers', {
             type: Sequelize.INTEGER,
             defaultValue: 6,
             comment: 'Number of powerplay overs'
         });
 
-        await queryInterface.addColumn('Tournaments', 'FeaturedImage', {
+        await addColumnIfNotExists('Tournaments', 'FeaturedImage', {
             type: Sequelize.STRING,
             allowNull: true,
             comment: 'Featured/cover image URL'

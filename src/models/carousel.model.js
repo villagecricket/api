@@ -9,7 +9,9 @@ module.exports = (sequelize, DataTypes) => {
         IsActive: { type: DataTypes.BOOLEAN, defaultValue: true }
     }, {
         tableName: 'Carousels',
-        timestamps: true
+        timestamps: true,
+        createdAt: 'CreatedAt',
+        updatedAt: 'UpdatedAt'
     });
 
     return Carousel;

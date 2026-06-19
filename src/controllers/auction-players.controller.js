@@ -14,14 +14,10 @@ exports.createAuctionPlayer = async (req, res) => {
         return response.error(res, PLAYERS.MISSINGID);
     }
 
-    const existing = await playerService.findPlayer({ Mobile: Mobile });
-
-    if (existing) {
-        return response.success(res, PLAYERS.EXISTING_RECORD, { existing }, HTTP.CONFLICT)
+    try {
+        const auctionPlayer = await auctionPlayerService.createAuctionPlayers(req.body);
+        return response.success(res, PLAYERS.CREATED, { auctionPlayer }, HTTP.CREATED);
+    } catch (error) {
+        return response.error(res, { message: error.message }, error.statusCode || HTTP.BAD_REQUEST);
     }
-
-    const auctionPlayer = await auctionPlayerService.createAuctionPlayers(req.body);
-
-
-    return response.success(res, PLAYERS.CREATED, { auctionPlayer }, HTTP.CREATED);
 };

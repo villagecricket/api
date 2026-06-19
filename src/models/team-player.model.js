@@ -23,7 +23,9 @@ module.exports = (sequelize, DataTypes) => {
         }
     }, {
         tableName: 'TeamPlayers',
-        timestamps: true
+        timestamps: true,
+        createdAt: 'CreatedAt',
+        updatedAt: 'UpdatedAt'
     });
 
     TeamPlayer.associate = (models) => {

@@ -13,7 +13,9 @@ module.exports = (sequelize, DataTypes) => {
         Date: { type: DataTypes.DATE }
     }, {
         tableName: 'Galleries',
-        timestamps: true
+        timestamps: true,
+        createdAt: 'CreatedAt',
+        updatedAt: 'UpdatedAt'
     });
 
     return Gallery;

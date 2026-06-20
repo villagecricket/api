@@ -11,7 +11,7 @@ const asyncHandler = require('../utils/asyncHandler');
 
 // App Settings
 router.get('/app-settings', asyncHandler(controller.getAppSettings));
-router.put('/app-settings', uploadAppLogo.single('logo'), asyncHandler(controller.updateAppSettings));
+router.put('/app-settings', uploadAppLogo.fields([{name: 'logo', maxCount: 1}, {name: 'upiScanner', maxCount: 1}]), asyncHandler(controller.updateAppSettings));
 
 // Gallery
 router.get('/gallery', asyncHandler(controller.getGallery));

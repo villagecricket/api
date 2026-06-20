@@ -34,6 +34,10 @@ module.exports = (sequelize, DataTypes) => {
         VerifiedAt: {
             type: DataTypes.DATE,
             allowNull: true
+        },
+        Notes: {
+            type: DataTypes.TEXT,
+            allowNull: true
         }
     }, {
         tableName: 'Payments',

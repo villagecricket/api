@@ -7,7 +7,7 @@ const { Op } = require('sequelize');
 /**
  * Owner submits fee payment screenshot
  */
-const submitOwnerFee = async (userId, transactionId, file) => {
+const submitOwnerFee = async (userId, transactionId, file, notes) => {
     const owner = await Owner.findOne({ where: { UserID: userId } });
     if (!owner) {
         throw new Error('Owner profile not found');
@@ -29,7 +29,8 @@ const submitOwnerFee = async (userId, transactionId, file) => {
         Amount: 10000.00, // Fixed registration fee
         TransactionID: transactionId,
         ReceiptPath: receiptPath,
-        Status: 'pending'
+        Status: 'pending',
+        Notes: notes || null
     });
 
     owner.FeePaymentStatus = 'pending_verification';
@@ -154,7 +155,7 @@ const verifyPlayer = async (playerId, verifierUserId, status, notes) => {
 /**
  * Public Team Registration (Owner signs up for a specific session or generally)
  */
-const registerTeam = async (ownerName, contactNumber, password, teamName, location, slogan, sessionId) => {
+const registerTeam = async (ownerName, contactNumber, password, teamName, location, slogan, sessionId, transactionId, notes, receiptFile) => {
     // 1. Check if user with contact number exists
     const normalizedPhone = String(contactNumber || '').trim();
 
@@ -244,6 +245,27 @@ const registerTeam = async (ownerName, contactNumber, password, teamName, locati
         await owner.save();
     }
 
+    // Process payment
+    const existingPayment = await Payment.findOne({ where: { TransactionID: transactionId } });
+    if (existingPayment) {
+        throw new ApiError(HTTP.BAD_REQUEST, 'This transaction ID has already been submitted');
+    }
+
+    const receiptPath = receiptFile ? `/uploads/receipts/${receiptFile.filename}` : null;
+    if (receiptPath) {
+        const payment = await Payment.create({
+            OwnerID: owner.OwnerID,
+            Amount: 10000.00, // Fixed registration fee
+            TransactionID: transactionId,
+            ReceiptPath: receiptPath,
+            Status: 'pending',
+            Notes: notes || null
+        });
+        
+        owner.FeePaymentStatus = 'pending_verification';
+        await owner.save();
+    }
+
     return { user, team, owner, assignedSession };
 };
 
@@ -327,7 +349,8 @@ const getPendingOwners = async () => {
         where: { VerificationStatus: 'pending' },
         include: [
             { model: User, as: 'User', attributes: ['Email'] },
-            { model: TeamMaster, as: 'Team' }
+            { model: TeamMaster, as: 'Team' },
+            { model: Payment, as: 'Payments', limit: 1, order: [['createdAt', 'DESC']] }
         ],
         order: [['CreatedAt', 'DESC']]
     });

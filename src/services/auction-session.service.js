@@ -1,11 +1,13 @@
 const { Op } = require('sequelize');
-const { AuctionSession, AuctionTeam, TeamMaster } = require('../models');
+const { AuctionSession, AuctionTeam, TeamMaster, Tournament, TournamentTeam } = require('../models');
 const BaseService = require('./base.service');
 
 const service = new BaseService(AuctionSession);
 
 const getAllAuctionSessions = async () => {
-    return await service.getAll();
+    return await AuctionSession.findAll({
+        include: [{ model: Tournament, as: 'Tournament', attributes: ['TournamentID', 'Name'] }]
+    });
 };
 
 const getUpcomingAuctionSessions = async () => {
@@ -21,6 +23,11 @@ const getUpcomingAuctionSessions = async () => {
                 include: [
                     { model: TeamMaster, attributes: ['TeamID', 'Name', 'LogoURL', 'Location'] }
                 ]
+            },
+            {
+                model: Tournament,
+                as: 'Tournament',
+                attributes: ['TournamentID', 'Name']
             }
         ]
     });
@@ -28,7 +35,9 @@ const getUpcomingAuctionSessions = async () => {
 };
 
 const getAuctionSessionById = async (id) => {
-    return await service.getById(id);
+    return await AuctionSession.findByPk(id, {
+        include: [{ model: Tournament, as: 'Tournament', attributes: ['TournamentID', 'Name'] }]
+    });
 };
 
 const createAuctionSession = async (data) => {
@@ -36,7 +45,31 @@ const createAuctionSession = async (data) => {
 };
 
 const updateAuctionSession = async (id, data) => {
-    return await service.update(id, data);
+    const updated = await service.update(id, data);
+    
+    // Auto-transfer teams to tournament if auction is completed
+    if (data.Status === 'completed') {
+        const session = await AuctionSession.findByPk(id);
+        if (session && session.TournamentID) {
+            const auctionTeams = await AuctionTeam.findAll({ where: { SessionID: id } });
+            
+            for (const at of auctionTeams) {
+                // Check if already in tournament
+                const existing = await TournamentTeam.findOne({
+                    where: { TournamentID: session.TournamentID, TeamID: at.TeamID }
+                });
+                
+                if (!existing) {
+                    await TournamentTeam.create({
+                        TournamentID: session.TournamentID,
+                        TeamID: at.TeamID
+                    });
+                }
+            }
+        }
+    }
+    
+    return updated;
 };
 
 const deleteAuctionSession = async (id) => {

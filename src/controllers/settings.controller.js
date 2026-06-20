@@ -108,8 +108,11 @@ exports.getAppSettings = async (req, res) => {
 
 exports.updateAppSettings = async (req, res) => {
     const payload = req.body;
-    if (req.file) {
-        payload.AppLogoURL = getImagePath(req.file, 'branding');
+    if (req.files && req.files['logo']) {
+        payload.AppLogoURL = getImagePath(req.files['logo'][0], 'branding');
+    }
+    if (req.files && req.files['upiScanner']) {
+        payload.UPIScannerImageURL = getImagePath(req.files['upiScanner'][0], 'branding');
     }
     const data = await settingsService.updateAppSettings(payload);
     return response.success(res, "App settings updated successfully", { settings: data });

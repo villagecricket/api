@@ -8,9 +8,9 @@ const asyncHandler = require('../utils/asyncHandler');
  * Owner submits fee payment screenshot/info
  */
 exports.submitOwnerFee = asyncHandler(async (req, res) => {
-    const { transactionId } = req.body;
+    const { transactionId, notes } = req.body;
     const userId = req.user.userId;
-    const result = await onboardingService.submitOwnerFee(userId, transactionId, req.file);
+    const result = await onboardingService.submitOwnerFee(userId, transactionId, req.file, notes);
     response.success(res, 'Owner fee proof submitted successfully', result, HTTP.CREATED);
 });
 
@@ -66,13 +66,20 @@ exports.verifyPlayer = asyncHandler(async (req, res) => {
  * Public endpoint for Owner/Team registration
  */
 exports.registerTeam = asyncHandler(async (req, res) => {
-    const { ownerName, contactNumber, password, teamName, location, slogan, sessionId } = req.body;
+    const { ownerName, contactNumber, password, teamName, location, slogan, sessionId, transactionId, notes } = req.body;
     
     if (!ownerName || !contactNumber || !password || !teamName) {
         return response.error(res, { message: 'Missing required fields' }, HTTP.BAD_REQUEST);
     }
     
-    const result = await onboardingService.registerTeam(ownerName, contactNumber, password, teamName, location, slogan, sessionId);
+    if (!req.file || !transactionId) {
+        return response.error(res, { message: 'Payment screenshot and Transaction ID are required' }, HTTP.BAD_REQUEST);
+    }
+    
+    const result = await onboardingService.registerTeam(
+        ownerName, contactNumber, password, teamName, location, slogan, sessionId, 
+        transactionId, notes, req.file
+    );
     response.success(res, 'Team registered successfully.', result, HTTP.CREATED);
 });
 

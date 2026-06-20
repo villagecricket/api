@@ -20,7 +20,7 @@ router.get('/admin/players', authMiddleware, rbacMiddleware(['super_admin']), on
 router.post('/admin/players/:playerId/verify', authMiddleware, rbacMiddleware(['super_admin']), onboardingController.verifyPlayer);
 
 // Public Team Registration
-router.post('/public/register-team', onboardingController.registerTeam);
+router.post('/public/register-team', uploadReceipt.single('receipt'), onboardingController.registerTeam);
 
 // Public Player Auction Registration
 router.post('/public/register-player', onboardingController.registerPlayerForAuction);

@@ -8,24 +8,19 @@ const teamService = require('../services/team.service');
 
 exports.getAllTeams = asyncHandler(async (req, res) => {
     const teams = await teamsService.getAllTeams();
-
-    if (!teams.length) {
-        throw new ApiError(HTTP.NOT_FOUND, TEAMS.NOT_FOUND);
-    }
-
     return response.success(res, TEAMS.FETCH_SUCCESS, { teams });
 });
 
 exports.getTeamById = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    const teams = await teamsService.getTeamsById(id);
+    const team = await teamsService.getTeamsById(id);
 
-    if (!teams) {
+    if (!team) {
         throw new ApiError(HTTP.NOT_FOUND, TEAMS.NOT_FOUND);
     }
 
-    return response.success(res, TEAMS.FETCH_SUCCESS, { teams });
+    return response.success(res, TEAMS.FETCH_SUCCESS, { team });
 });
 
 exports.createTeam = asyncHandler(async (req, res) => {

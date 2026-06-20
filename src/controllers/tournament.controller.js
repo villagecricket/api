@@ -17,7 +17,7 @@ exports.getTournamentById = async (req, res) => {
 };
 
 exports.createTournament = async (req, res) => {
-    const payload = { ...req.body };
+    const payload = { ...req.body }; console.log('--- UPDATE TOURNAMENT PAYLOAD ---', req.body);
 
     if (req.files) {
         if (req.files.logo) payload.LogoURL = `/api/uploads/tournaments/${req.files.logo[0].filename}`;
@@ -31,6 +31,15 @@ exports.createTournament = async (req, res) => {
         } catch (e) {
             console.error('Failed to parse teams JSON:', e);
             payload.teams = [];
+        }
+    }
+
+    if (payload.PrizeDetails && typeof payload.PrizeDetails === 'string') {
+        try {
+            payload.PrizeDetails = JSON.parse(payload.PrizeDetails);
+        } catch (e) {
+            console.error('Failed to parse PrizeDetails JSON:', e);
+            payload.PrizeDetails = null;
         }
     }
 
@@ -54,6 +63,15 @@ exports.updateTournament = async (req, res) => {
         } catch (e) {
             console.error('Failed to parse teams JSON:', e);
             payload.teams = [];
+        }
+    }
+
+    if (payload.PrizeDetails && typeof payload.PrizeDetails === 'string') {
+        try {
+            payload.PrizeDetails = JSON.parse(payload.PrizeDetails);
+        } catch (e) {
+            console.error('Failed to parse PrizeDetails JSON:', e);
+            payload.PrizeDetails = null;
         }
     }
 

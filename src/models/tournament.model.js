@@ -59,6 +59,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.INTEGER,
             defaultValue: 11
         },
+        BallType: {
+            type: DataTypes.ENUM('Tennis', 'Leather', 'Hard Tennis', 'Other'),
+            defaultValue: 'Tennis'
+        },
         BallsPerOver: {
             type: DataTypes.INTEGER,
             defaultValue: 6
@@ -71,6 +75,10 @@ module.exports = (sequelize, DataTypes) => {
         RegistrationFee: {
             type: DataTypes.DECIMAL(10, 2),
             defaultValue: 0.00
+        },
+        PrizeDetails: {
+            type: DataTypes.JSON,
+            allowNull: true
         },
         ContactEmail: DataTypes.STRING,
         ContactPhone: DataTypes.STRING,
@@ -135,6 +143,10 @@ module.exports = (sequelize, DataTypes) => {
         Tournament.hasMany(models.TournamentStandings, {
             foreignKey: 'TournamentID',
             as: 'Standings'
+        });
+        Tournament.hasOne(models.AuctionSession, {
+            foreignKey: 'TournamentID',
+            as: 'Auction'
         });
     };
 

@@ -25,6 +25,14 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.INTEGER,
             allowNull: false
         },
+        TournamentID: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            references: {
+                model: 'Tournaments',
+                key: 'TournamentID'
+            }
+        },
         Notes: DataTypes.STRING,
         StartDate: DataTypes.DATE,
         EndDate: DataTypes.DATE,
@@ -41,6 +49,7 @@ module.exports = (sequelize, DataTypes) => {
     AuctionSession.associate = models => {
         AuctionSession.hasMany(models.AuctionPlayer, { foreignKey: 'SessionID' });
         AuctionSession.hasMany(models.AuctionTeam, { foreignKey: 'SessionID' });
+        AuctionSession.belongsTo(models.Tournament, { foreignKey: 'TournamentID', as: 'Tournament' });
     };
 
     return AuctionSession;

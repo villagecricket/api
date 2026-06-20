@@ -13,7 +13,6 @@ exports.createPlayerValidator = [
         .notEmpty().withMessage('Father name is required'),
 
     body('Email')
-        .notEmpty().withMessage('Email is required')
         .isEmail().withMessage('Invalid email format'),
 
     body('DOB')
@@ -27,20 +26,11 @@ exports.createPlayerValidator = [
         .notEmpty().withMessage('Role is required')
         .isLength({ min: 2 }).withMessage('Role must be at least 2 characters'),
 
-    body('BattingStyle')
-        .notEmpty().withMessage('Batting style is required'),
-
     body('BowlingStyle')
         .notEmpty().withMessage('Bowling style is required'),
 
-    body('BattingPosition')
-        .notEmpty().withMessage('Batting position is required'),
-
-    body('JerseySize')
-        .notEmpty().withMessage('Jersey size is required'),
 
     body('EmergencyContact')
-        .notEmpty().withMessage('Emergency contact is required')
         .isMobilePhone().withMessage('Invalid emergency contact'),
 
     // body('PhotoURL')

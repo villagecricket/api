@@ -12,7 +12,10 @@ module.exports = (sequelize, DataTypes) => {
         FacebookURL: { type: DataTypes.STRING },
         InstagramURL: { type: DataTypes.STRING },
         TwitterURL: { type: DataTypes.STRING },
-        YoutubeURL: { type: DataTypes.STRING }
+        YoutubeURL: { type: DataTypes.STRING },
+        UPIScannerImageURL: { type: DataTypes.STRING },
+        UPIName: { type: DataTypes.STRING },
+        UPIId: { type: DataTypes.STRING }
     }, {
         tableName: 'AppSettings',
         timestamps: true,

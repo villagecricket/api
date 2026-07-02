@@ -93,7 +93,7 @@ exports.registerPlayerForAuction = asyncHandler(async (req, res) => {
         return response.error(res, { message: 'Missing required fields (playerName, fatherName, contactNumber, sessionId)' }, HTTP.BAD_REQUEST);
     }
     
-    const result = await onboardingService.registerPlayerForAuction(playerName, fatherName, contactNumber, role, battingStyle, bowlingStyle, basePrice, sessionId);
+    const result = await onboardingService.registerPlayerForAuction(playerName, fatherName, contactNumber, role, battingStyle, bowlingStyle, basePrice, sessionId, req.file);
     response.success(res, 'Player registered for auction successfully.', result, HTTP.CREATED);
 });
 

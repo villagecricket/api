@@ -3,7 +3,7 @@ const router = express.Router();
 const onboardingController = require('../controllers/onboarding.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const rbacMiddleware = require('../middlewares/rbac.middleware');
-const { uploadReceipt, uploadVerificationDoc } = require('../middlewares/upload.middleware');
+const { uploadReceipt, uploadVerificationDoc, uploadPlayerImage } = require('../middlewares/upload.middleware');
 
 // Owner submits payment screenshot
 router.post('/owner/fee', authMiddleware, rbacMiddleware(['owner']), uploadReceipt.single('receipt'), onboardingController.submitOwnerFee);
@@ -23,7 +23,7 @@ router.post('/admin/players/:playerId/verify', authMiddleware, rbacMiddleware(['
 router.post('/public/register-team', uploadReceipt.single('receipt'), onboardingController.registerTeam);
 
 // Public Player Auction Registration
-router.post('/public/register-player', onboardingController.registerPlayerForAuction);
+router.post('/public/register-player', uploadPlayerImage.single('photo'), onboardingController.registerPlayerForAuction);
 // Admin views and verifies pending team/owner registrations
 router.get('/admin/owners', authMiddleware, rbacMiddleware(['super_admin']), onboardingController.getPendingOwners);
 router.post('/admin/owners/:ownerId/verify', authMiddleware, rbacMiddleware(['super_admin']), onboardingController.verifyOwner);

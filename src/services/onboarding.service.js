@@ -161,7 +161,7 @@ const registerTeam = async (ownerName, contactNumber, password, teamName, locati
 
     let user = await User.findOne({ where: { Email: normalizedPhone } });
     let team, owner;
-    
+
     if (user) {
         if (user.Role !== 'owner') {
             throw new ApiError(HTTP.BAD_REQUEST, 'A non-owner user with this phone number already exists.');
@@ -261,7 +261,7 @@ const registerTeam = async (ownerName, contactNumber, password, teamName, locati
             Status: 'pending',
             Notes: notes || null
         });
-        
+
         owner.FeePaymentStatus = 'pending_verification';
         await owner.save();
     }
@@ -272,10 +272,10 @@ const registerTeam = async (ownerName, contactNumber, password, teamName, locati
 /**
  * Public Player Registration for an Auction Session
  */
-const registerPlayerForAuction = async (playerName, fatherName, contactNumber, role, battingStyle, bowlingStyle, basePrice, sessionId) => {
+const registerPlayerForAuction = async (playerName, fatherName, contactNumber, role, battingStyle, bowlingStyle, basePrice, sessionId, photoFile) => {
     const { AuctionPlayer } = require('../models');
     const normalizedPhone = String(contactNumber || '').trim();
-    
+
     if (!sessionId) {
         throw new ApiError(HTTP.BAD_REQUEST, 'Auction Session ID is required');
     }
@@ -300,6 +300,8 @@ const registerPlayerForAuction = async (playerName, fatherName, contactNumber, r
     if (!player) {
         player = await PlayerMaster.findOne({ where: { Mobile: normalizedPhone } });
     }
+    const photoUrl = photoFile ? `/uploads/players/${photoFile.filename}` : null;
+
     if (!player) {
         player = await PlayerMaster.create({
             UserID: user.UserID,
@@ -309,6 +311,7 @@ const registerPlayerForAuction = async (playerName, fatherName, contactNumber, r
             Role: role || 'Batsman',
             BattingStyle: battingStyle || 'Right-hand bat',
             BowlingStyle: bowlingStyle || 'Right-arm medium',
+            PhotoURL: photoUrl,
             Status: 'active' // auto-active for simplicity
         });
     } else {
@@ -319,6 +322,9 @@ const registerPlayerForAuction = async (playerName, fatherName, contactNumber, r
         player.Role = player.Role || role || 'Batsman';
         player.BattingStyle = player.BattingStyle || battingStyle || 'Right-hand bat';
         player.BowlingStyle = player.BowlingStyle || bowlingStyle || 'Right-arm medium';
+        if (photoUrl) {
+            player.PhotoURL = photoUrl;
+        }
         await player.save();
     }
 
@@ -334,7 +340,7 @@ const registerPlayerForAuction = async (playerName, fatherName, contactNumber, r
     const auctionPlayer = await AuctionPlayer.create({
         SessionID: sessionId,
         PlayerID: player.PlayerID,
-        BasePrice: basePrice || 100000,
+        BasePrice: basePrice || 100,
         Status: 'available'
     });
 
@@ -373,66 +379,66 @@ const verifyOwner = async (ownerId, status) => {
 
     // As per user request, skip payment flow for now
     // If approved, ensure the owner has an associated team. If missing, create a default team.
-if (status === 'approved') {
-  // Ensure fee status is marked paid per user request.
-  owner.FeePaymentStatus = 'paid';
+    if (status === 'approved') {
+        // Ensure fee status is marked paid per user request.
+        owner.FeePaymentStatus = 'paid';
 
-  // Auto-create a default team if owner lacks TeamID.
-  if (!owner.TeamID) {
-    // Create a placeholder team name using owner's full name or a generic identifier.
-    const defaultTeamName = owner.FullName ? `${owner.FullName}'s Team` : `Team${owner.OwnerID}`;
-    const newTeam = await TeamMaster.create({
-      Name: defaultTeamName,
-      OwnerName: owner.FullName || 'Owner',
-      Contact: owner.ContactNumber || '',
-      Location: '',
-      Slogan: ''
-    });
-    // Update owner with the newly created TeamID.
-    owner.TeamID = newTeam.TeamID;
-    await owner.save();
-  }
-}
+        // Auto-create a default team if owner lacks TeamID.
+        if (!owner.TeamID) {
+            // Create a placeholder team name using owner's full name or a generic identifier.
+            const defaultTeamName = owner.FullName ? `${owner.FullName}'s Team` : `Team${owner.OwnerID}`;
+            const newTeam = await TeamMaster.create({
+                Name: defaultTeamName,
+                OwnerName: owner.FullName || 'Owner',
+                Contact: owner.ContactNumber || '',
+                Location: '',
+                Slogan: ''
+            });
+            // Update owner with the newly created TeamID.
+            owner.TeamID = newTeam.TeamID;
+            await owner.save();
+        }
+    }
 
     await owner.save();
 
     // ── Auto-assign team to nearest upcoming auction session ──
     // ── Auto-assign team to nearest upcoming auction session ──
-let assignedSession = null;
-if (status === 'approved' && owner.TeamID) {
-    try {
-        const requestedSession = owner.RequestedSessionID
-            ? await AuctionSession.findByPk(owner.RequestedSessionID)
-            : null;
-        const upcomingSession = requestedSession || await AuctionSession.findOne({
-            where: {
-                Status: 'upcoming',
-                StartDate: { [Op.gte]: new Date() }
-            },
-            order: [['StartDate', 'ASC']]
-        });
-
-        if (upcomingSession) {
-            // Check if already registered
-            const alreadyRegistered = await AuctionTeam.findOne({
-                where: { SessionID: upcomingSession.SessionID, TeamID: owner.TeamID }
+    let assignedSession = null;
+    if (status === 'approved' && owner.TeamID) {
+        try {
+            const requestedSession = owner.RequestedSessionID
+                ? await AuctionSession.findByPk(owner.RequestedSessionID)
+                : null;
+            const upcomingSession = requestedSession || await AuctionSession.findOne({
+                where: {
+                    Status: 'upcoming',
+                    StartDate: { [Op.gte]: new Date() }
+                },
+                order: [['StartDate', 'ASC']]
             });
 
-            if (!alreadyRegistered) {
-                await AuctionTeam.create({
-                    SessionID: upcomingSession.SessionID,
-                    TeamID: owner.TeamID,
-                    Budget: upcomingSession.MaxBudget,
-                    RemainingBudget: upcomingSession.MaxBudget,
-                    PlayersCount: 0
+            if (upcomingSession) {
+                // Check if already registered
+                const alreadyRegistered = await AuctionTeam.findOne({
+                    where: { SessionID: upcomingSession.SessionID, TeamID: owner.TeamID }
                 });
-                assignedSession = upcomingSession;
+
+                if (!alreadyRegistered) {
+                    await AuctionTeam.create({
+                        SessionID: upcomingSession.SessionID,
+                        TeamID: owner.TeamID,
+                        Budget: upcomingSession.MaxBudget,
+                        RemainingBudget: upcomingSession.MaxBudget,
+                        PlayersCount: 0
+                    });
+                    assignedSession = upcomingSession;
+                }
             }
+        } catch (err) {
+            console.error('Auto-assign to session failed (non-critical):', err.message);
         }
-    } catch (err) {
-        console.error('Auto-assign to session failed (non-critical):', err.message);
     }
-}
 
 
     return { owner, assignedSession };
